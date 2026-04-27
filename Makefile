@@ -2,7 +2,8 @@ build:
 	g++ -Wall -std=c++17 -I"./libs/" src/*.cpp \
 	-I/opt/homebrew/include \
 	-L/opt/homebrew/lib \
-	`sdl3=config --libs --cflags` -lSDL3_image -lSDL3_ttf -lSDL3_mixer \
+	`pkg-config --libs --cflags sdl3` \
+       	-lSDL3_image -lSDL3_ttf -lSDL3_mixer \
 	-llua \
 	-o 2dengine
 
