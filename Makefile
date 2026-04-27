@@ -1,8 +1,13 @@
-build: 
-	g++ -Wall -std=c++17 src/*.cpp -lSDL2 -llua5.3 -o gameengine
+build:
+	g++ -Wall -std=c++17 -I"./libs/" src/*.cpp \
+	-I/opt/homebrew/include \
+	-L/opt/homebrew/lib \
+	`sdl3=config --libs --cflags` -lSDL3_image -lSDL3_ttf -lSDL3_mixer \
+	-llua \
+	-o 2dengine
 
 run:
-	./gameengine
+	./2dengine
 
 clean:
-	rm gameengine
+	rm -f 2dengine
