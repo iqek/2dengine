@@ -2,20 +2,21 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
+#include <spdlog/spdlog.h>
 #include <iostream>
 
 Game::Game() {
 	isRunning = false;
-	std::cout << "Game constructor called \n";
+	spdlog::info("Game constructor called");
 }
 
 Game::~Game(){
-	std::cout << "Game destructor called \n";
+	spdlog::info("Game destructor called");
 }
 
 void Game::Initialize(){
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)){
-		std::cerr << "error initializing SDL: " << SDL_GetError() << std::endl;
+		spdlog::error("Error initializing SDL");
 		return;
 	}
 	
@@ -26,7 +27,7 @@ void Game::Initialize(){
 	window = SDL_CreateWindow(NULL, windowWidth, windowHeight, SDL_WINDOW_BORDERLESS );
 
 	if (!window) {
-		std::cerr << "error creating sdl window: " << SDL_GetError() << std::endl;
+		spdlog::error("Error creating sdl window");
 		return;
 	}
 
@@ -34,10 +35,10 @@ void Game::Initialize(){
 	SDL_SetRenderVSync(renderer, 1);
 
 	if (!renderer){
-		std::cerr << "error creating sdl renderer: " << SDL_GetError() << std::endl;
+		spdlog::error("Error creating sdl renderer");
 		return;
 	}
-	
+
 	SDL_SetWindowFullscreen(window, true);
 
 	isRunning = true;

@@ -1,14 +1,20 @@
+CC = g++
+LANG_STD = -std=c++17
+COMPILER_FLAGS = -Wall -Wfatal-errors
+INCLUDE_PATH = -I"./libs/" -I"./libs/spdlog/include"
+SRC_FILES = ./src/*.cpp ./src/Game/*.cpp
+LINKER_FLAGS = `pkg-config --libs --cflags sdl3` -lSDL3_image -lSDL3_ttf -lSDL3_mixer -llua 
+OBJ_NAME = 2dengine
+
 build:
-	g++ -Wall -std=c++17 -I"./libs/" src/*.cpp \
+	$(CC) $(COMPILER_FLAGS) $(LANG_STD) $(INCLUDE_PATH) $(SRC_FILES) \
 	-I/opt/homebrew/include \
 	-L/opt/homebrew/lib \
-	`pkg-config --libs --cflags sdl3` \
-       	-lSDL3_image -lSDL3_ttf -lSDL3_mixer \
-	-llua \
-	-o 2dengine
+	$(LINKER_FLAGS) \
+	-o $(OBJ_NAME)
 
 run:
-	./2dengine
+	./$(OBJ_NAME)
 
 clean:
-	rm -f 2dengine
+	rm $(OBJ_NAME)
