@@ -5,9 +5,9 @@ int main(int argc, char* argv[]) {
 
 	Game game;
 
-	game.Initialize();
-	game.Run();
-	game.Destroy();
+	game.initialize();
+	game.run();
+	game.destroy();
 
 	return 0;
 }

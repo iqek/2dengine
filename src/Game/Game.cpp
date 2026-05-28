@@ -1,4 +1,6 @@
 #include "Game.h"
+#include "../ECS/ECS.h"
+
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
@@ -14,28 +16,28 @@ Game::~Game(){
 	spdlog::info("Game destructor called");
 }
 
-void Game::Initialize(){
+void Game::initialize(){
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)){
 		spdlog::error("Error initializing SDL");
 		return;
 	}
-	
+
 	const SDL_DisplayMode* displayMode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
 	windowWidth = displayMode->w;
 	windowHeight = displayMode->h;
 
-	window = SDL_CreateWindow(NULL, windowWidth, windowHeight, SDL_WINDOW_BORDERLESS );
+	window = SDL_CreateWindow(NULL, windowWidth, windowHeight, SDL_WINDOW_BORDERLESS);
 
 	if (!window) {
-		spdlog::error("Error creating sdl window");
+		spdlog::error("Error creating SDL window");
 		return;
 	}
 
-	renderer = SDL_CreateRenderer(window, NULL );
+	renderer = SDL_CreateRenderer(window, NULL);
 	SDL_SetRenderVSync(renderer, 1);
 
 	if (!renderer){
-		spdlog::error("Error creating sdl renderer");
+		spdlog::error("Error creating SDL renderer");
 		return;
 	}
 
@@ -44,11 +46,11 @@ void Game::Initialize(){
 	isRunning = true;
 }
 
-void Game::ProcessInput(){
+void Game::processInput(){
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent)){
 		switch(sdlEvent.type) {
-			case SDL_EVENT_QUIT: 
+			case SDL_EVENT_QUIT:
 				isRunning = false;
 				break;
 			case SDL_EVENT_KEY_DOWN:
@@ -56,53 +58,37 @@ void Game::ProcessInput(){
 					isRunning = false;
 				}
 				break;
-		}	
+		}
 	}
 }
 
-glm::vec2 playerPos;
-glm::vec2 playerVelocity;
+void Game::setup() {
 
-void Game::Setup() {
-	playerPos = glm::vec2(10.0,10.0);
-	playerVelocity = glm::vec2(50.0, 5.0);
 }
 
-void Game::Update(){
+void Game::update(){
 	double deltaTime = (SDL_GetTicks() - millisecsPreviousFrame) / 1000.0;
-    	millisecsPreviousFrame = SDL_GetTicks();
-
-	playerPos.x += playerVelocity.x * deltaTime;
-	playerPos.y += playerVelocity.y * deltaTime;
+	millisecsPreviousFrame = SDL_GetTicks();
 }
 
-void Game::Render() {
+void Game::render() {
 	SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
 	SDL_RenderClear(renderer);
-
-	// draw png texture
-	SDL_Surface* surface = IMG_Load("./assets/images/tank-tiger-right.png");
-	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);	
-	SDL_DestroySurface(surface);
-	SDL_FRect dstRect = {playerPos.x, playerPos.y, 32, 32};
-
-	SDL_RenderTexture(renderer, texture, NULL, &dstRect);
-	SDL_DestroyTexture(texture);
 
 	SDL_RenderPresent(renderer);
 }
 
-void Game::Run(){
-	Setup();
+void Game::run(){
+	setup();
 	while(isRunning) {
-		ProcessInput();
-		Update();
-		Render();
+		processInput();
+		update();
+		render();
 	}
 }
 
-void Game::Destroy(){
+void Game::destroy(){
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
-	SDL_Quit();	
+	SDL_Quit();
 }
