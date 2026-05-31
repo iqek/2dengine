@@ -1,6 +1,7 @@
 #include "Game.h"
 #include "../ECS/ECS.h"
-
+#include "../Components/TransformComponent.h"
+#include "../Components/RigidbodyComponent.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
@@ -9,6 +10,7 @@
 
 Game::Game() {
 	isRunning = false;
+	registry = std::make_unique<Registry>();
 	spdlog::info("Game constructor called");
 }
 
@@ -63,7 +65,15 @@ void Game::processInput(){
 }
 
 void Game::setup() {
-
+	// create an entity
+	Entity cirno = registry->createEntity();
+	
+	// add a component to the entity
+	registry->addComponent<TransformComponent>(cirno, glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
+	registry->addComponent<RigidbodyComponent>(cirno, glm::vec2(50.0, 0.0));
+	registry->removeComponent<TransformComponent>(cirno);
+	//cirno.addComponent<TransformComponent>(glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
+	//cirno.addComponent<RigidbodyComponent>(glm::vec2(50.0, 0.0));
 }
 
 void Game::update(){

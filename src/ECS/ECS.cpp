@@ -13,8 +13,8 @@ void System::addEntityToSystem(Entity entity) {
 
 void System::removeEntityFromSystem(Entity entity){
 	entities.erase(std::remove_if(entities.begin(), entities.end(), [&entity](Entity other) {
-				return entity == other;
-				}), entities.end());
+		return entity == other;
+	}), entities.end());
 }
 
 std::vector<Entity> System::getSystemEntities() const {
@@ -33,12 +33,16 @@ Entity Registry::createEntity(){
 	Entity entity(entityId);
 	entitiesToBeAdded.insert(entity);
 
+	if(entityId >= entityComponentSignatures.size()){
+		entityComponentSignatures.resize(entityId + 1);
+	}
+
 	spdlog::info("Entity created with id = {}", entityId);
 	return entity;
 }
 
 void Registry::addEntityToSystems(Entity entity){
-	const uint32_t entityId = entity.getId();
+	const auto entityId = entity.getId();
 
 	// Match entityComponentSignature <---> systemComponentSignature
 	const auto entityComponentSignature = entityComponentSignatures[entityId];
@@ -55,5 +59,11 @@ void Registry::addEntityToSystems(Entity entity){
 }
 
 void Registry::update(){
+	// Add the entities that are waiting to be created to the active systems
+	for(auto entity: entitiesToBeAdded){
+		addEntityToSystems(entity);
+	}
+	entitiesToBeAdded.clear();
 
+	// Remove the enitites that are waiting to be killed from the active systems
 }
