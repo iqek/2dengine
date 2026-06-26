@@ -44,11 +44,11 @@ class Entity {
 		bool operator <(const Entity& other) const { return id < other.id; }
 		bool operator >(const Entity& other) const { return id > other.id; }
 
-		//template<typename TComponent, typename ...TArgs> void addComponent(TArgs&& ...args);
-		//template<typename TComponent> void removeComponent();
-		//template<typename TComponent> bool hasComponent() const;
-		//template<typename TComponent> TComponent& getComponent() const;
-		//class Registry* registry;
+		template<typename TComponent, typename ...TArgs> void addComponent(TArgs&& ...args);
+		template<typename TComponent> void removeComponent();
+		template<typename TComponent> bool hasComponent() const;
+		template<typename TComponent> TComponent& getComponent() const;
+		class Registry* registry;
 };
 
 
@@ -244,6 +244,8 @@ void Registry::removeComponent(Entity entity){
 	const auto componentId = Component<TComponent>::getId();
 	const auto entityId = entity.getId();
 	entityComponentSignatures[entityId].set(componentId, false);
+
+	spdlog::info("ComponentId = {} was removed from EntityId {}", componentId, entityId);
 }
 
 
@@ -258,6 +260,27 @@ template<typename TComponent>
 TComponent& Registry::getComponent(Entity entity) const{
 	const auto componentId = Component<TComponent>::getId() ;
 	const auto entityId = entity.getId();
-	auto componentPool = std::static_pointer_cast<Pool<TComponent>>[componentId];
+	auto componentPool = std::static_pointer_cast<Pool<TComponent>>(componentPools[componentId]);
 	return componentPool->get(entityId);
+}
+
+
+template<typename TComponent, typename ...TArgs>
+void Entity::addComponent(TArgs&& ...args){
+	registry -> addComponent<TComponent>(*this, std::forward<TArgs>(args)...); 
+}
+
+template<typename TComponent>
+void Entity::removeComponent(){
+	registry->removeComponent<TComponent>(*this);
+}
+
+template<typename TComponent>
+bool Entity::hasComponent() const {
+	return registry->hasComponent<TComponent>(*this);
+}
+
+template<typename TComponent>
+TComponent& Entity::getComponent() const {
+	return registry->getComponent<TComponent>(*this);
 }

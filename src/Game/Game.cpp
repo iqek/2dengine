@@ -2,6 +2,9 @@
 #include "../ECS/ECS.h"
 #include "../Components/TransformComponent.h"
 #include "../Components/RigidbodyComponent.h"
+#include "../Components/SpriteComponent.h"
+#include "../Systems/MovementSystem.h"
+#include "../Systems/RenderSystem.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
@@ -65,25 +68,40 @@ void Game::processInput(){
 }
 
 void Game::setup() {
+	// add the systems that need to be processed in our game
+	registry->addSystem<MovementSystem>();
+	registry->addSystem<RenderSystem>();
+
 	// create an entity
 	Entity cirno = registry->createEntity();
-	
 	// add a component to the entity
-	registry->addComponent<TransformComponent>(cirno, glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
-	registry->addComponent<RigidbodyComponent>(cirno, glm::vec2(50.0, 0.0));
-	registry->removeComponent<TransformComponent>(cirno);
-	//cirno.addComponent<TransformComponent>(glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
-	//cirno.addComponent<RigidbodyComponent>(glm::vec2(50.0, 0.0));
+	cirno.addComponent<TransformComponent>(glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
+	cirno.addComponent<RigidbodyComponent>(glm::vec2(50.0, 10.0));
+	cirno.addComponent<SpriteComponent>(10, 10);
+
+	Entity reimu = registry->createEntity();
+	reimu.addComponent<TransformComponent>(glm::vec2(35.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
+	reimu.addComponent<RigidbodyComponent>(glm::vec2(20.0, 90.0));
+	reimu.addComponent<SpriteComponent>(10, 50);
 }
 
 void Game::update(){
 	double deltaTime = (SDL_GetTicks() - millisecsPreviousFrame) / 1000.0;
 	millisecsPreviousFrame = SDL_GetTicks();
+
+	// update the registry to process the entities that are waiting to be created/deleted
+	registry->update();
+
+	// invoke all systems that need to update
+	registry->getSystem<MovementSystem>().update(deltaTime);
 }
 
 void Game::render() {
 	SDL_SetRenderDrawColor(renderer, 21, 21, 21, 255);
 	SDL_RenderClear(renderer);
+
+	// invoke all systems that need to render
+	registry->getSystem<RenderSystem>().update(renderer);
 
 	SDL_RenderPresent(renderer);
 }
