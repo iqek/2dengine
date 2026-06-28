@@ -2,7 +2,7 @@ CC = g++
 LANG_STD = -std=c++17
 COMPILER_FLAGS = -Wall -Wfatal-errors
 INCLUDE_PATH = -I"./libs/" -I"./libs/spdlog/include"
-SRC_FILES = ./src/*.cpp ./src/game/*.cpp ./src/ecs/*.cpp 
+SRC_FILES = ./src/*.cpp ./src/game/*.cpp ./src/ecs/*.cpp ./src/resources/*.cpp 
 LINKER_FLAGS = `pkg-config --libs --cflags sdl3` -lSDL3_image -lSDL3_ttf -lSDL3_mixer -llua 
 OBJ_NAME = 2dengine
 
