@@ -1,10 +1,10 @@
 #include "Game.h"
-#include "../ECS/ECS.h"
-#include "../Components/TransformComponent.h"
-#include "../Components/RigidbodyComponent.h"
-#include "../Components/SpriteComponent.h"
-#include "../Systems/MovementSystem.h"
-#include "../Systems/RenderSystem.h"
+#include "../ecs/ECS.h"
+#include "../components/TransformComponent.h"
+#include "../components/RigidbodyComponent.h"
+#include "../components/SpriteComponent.h"
+#include "../systems/MovementSystem.h"
+#include "../systems/RenderSystem.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
