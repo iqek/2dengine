@@ -3,8 +3,10 @@
 #include "../components/TransformComponent.h"
 #include "../components/RigidbodyComponent.h"
 #include "../components/SpriteComponent.h"
+#include "../components/AnimationComponent.h"
 #include "../systems/MovementSystem.h"
 #include "../systems/RenderSystem.h"
+#include "../systems/AnimationSystem.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
@@ -73,10 +75,13 @@ void Game::loadLevel(int level){
 	// add the systems that need to be processed in our game
 	registry->addSystem<MovementSystem>();
 	registry->addSystem<RenderSystem>();
+	registry->addSystem<AnimationSystem>();
 
 	// adding assets to the ResourceManager
 	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
 	resources->addTexture(renderer, "truck-image", "./assets/images/truck-ford-right.png");
+	resources->addTexture(renderer, "chopper-image", "./assets/images/chopper.png");
+	resources->addTexture(renderer, "radar-image", "./assets/images/radar.png");
 	resources->addTexture(renderer, "tilemap-image", "./assets/tilemaps/jungle.png");
 	
 	// load the tilemap
@@ -122,6 +127,18 @@ void Game::loadLevel(int level){
 	truck.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
 	truck.addComponent<RigidbodyComponent>(glm::vec2(20.0, 0.0));
 	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
+
+	Entity chopper = registry->createEntity();
+	chopper.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
+	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
+	chopper.addComponent<AnimationComponent>(2, 12, true);
+
+	Entity radar = registry->createEntity();
+	radar.addComponent<TransformComponent>(glm::vec2((windowWidth - 74), 10.0), glm::vec2(1.0, 1.0), 0.0);
+	radar.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	radar.addComponent<SpriteComponent>("radar-image", 64, 64, 2);
+	radar.addComponent<AnimationComponent>(8, 5, true);
 }
 
 void Game::setup() {
@@ -137,6 +154,7 @@ void Game::update(){
 
 	// invoke all systems that need to update
 	registry->getSystem<MovementSystem>().update(deltaTime);
+	registry->getSystem<AnimationSystem>().update();
 }
 
 void Game::render() {
