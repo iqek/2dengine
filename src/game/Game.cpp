@@ -10,10 +10,12 @@
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 #include <iostream>
+#include <fstream>
 
 Game::Game() {
 	isRunning = false;
 	registry = std::make_unique<Registry>();
+	resources = std::make_unique<ResourceManager>();
 	spdlog::info("Game constructor called");
 }
 
@@ -67,22 +69,63 @@ void Game::processInput(){
 	}
 }
 
-void Game::setup() {
+void Game::loadLevel(int level){
 	// add the systems that need to be processed in our game
 	registry->addSystem<MovementSystem>();
 	registry->addSystem<RenderSystem>();
 
-	// create an entity
-	Entity cirno = registry->createEntity();
-	// add a component to the entity
-	cirno.addComponent<TransformComponent>(glm::vec2(10.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
-	cirno.addComponent<RigidbodyComponent>(glm::vec2(50.0, 10.0));
-	cirno.addComponent<SpriteComponent>(10, 10);
+	// adding assets to the ResourceManager
+	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
+	resources->addTexture(renderer, "truck-image", "./assets/images/truck-ford-right.png");
+	resources->addTexture(renderer, "tilemap-image", "./assets/tilemaps/jungle.png");
+	
+	// load the tilemap
+	int tileSize = 32;
+	int mapCols = 25;
+	int mapRows = 20;
+	double tileScale = 3.0;
+	std::fstream mapFile;
+	mapFile.open("./assets/tilemaps/jungle.map");
 
-	Entity reimu = registry->createEntity();
-	reimu.addComponent<TransformComponent>(glm::vec2(35.0, 30.0), glm::vec2(1.0, 1.0), 0.0);
-	reimu.addComponent<RigidbodyComponent>(glm::vec2(20.0, 90.0));
-	reimu.addComponent<SpriteComponent>(10, 50);
+	if (!mapFile.is_open()) {
+    	spdlog::error("Failed to open tilemap file");
+    	return;
+	}
+
+	for(int y = 0; y < mapRows; y++){
+		for(int x = 0; x < mapCols; x++){
+			char ch;
+			mapFile.get(ch);
+			int srcRectY = std::atoi(&ch) * tileSize;
+			mapFile.get(ch);
+			int srcRectX = std::atoi(&ch) * tileSize;
+			mapFile.ignore();
+
+			Entity tile = registry->createEntity();
+			tile.addComponent<TransformComponent>(
+				glm::vec2(x * (tileScale * tileSize), y * (tileScale * tileSize)),
+				glm::vec2(tileScale, tileScale)
+			);
+			tile.addComponent<SpriteComponent>("tilemap-image", tileSize, tileSize, 0, srcRectX, srcRectY);
+		}
+	}
+	mapFile.close();
+
+	// create an entity
+	Entity tank = registry->createEntity();
+	// add a component to the entity
+	tank.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
+	tank.addComponent<RigidbodyComponent>(glm::vec2(30.0, 0.0));
+	tank.addComponent<SpriteComponent>("tank-image", 32, 32, 1);
+
+	Entity truck = registry->createEntity();
+	truck.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
+	truck.addComponent<RigidbodyComponent>(glm::vec2(20.0, 0.0));
+	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
+}
+
+void Game::setup() {
+	loadLevel(1);
 }
 
 void Game::update(){
@@ -101,7 +144,7 @@ void Game::render() {
 	SDL_RenderClear(renderer);
 
 	// invoke all systems that need to render
-	registry->getSystem<RenderSystem>().update(renderer);
+	registry->getSystem<RenderSystem>().update(renderer, *resources);
 
 	SDL_RenderPresent(renderer);
 }

@@ -10,8 +10,8 @@
 #include <cstdint>
 
 constexpr std::size_t MAX_COMPONENTS = 32;
-// We use a bitset to keep track of which components an entity has.
-// and also helps keep track of which entities a system is interested in
+// a bitset to keep track of which components an entity has.
+// also helps keep track of which entities a system is interested in
 using Signature = std::bitset<MAX_COMPONENTS>;
 
 struct IComponent {

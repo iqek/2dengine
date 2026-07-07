@@ -12,9 +12,7 @@ public:
 	}
 
 	void update(double deltaTime){
-		// Loop all entities that the system is interested in
 		for(auto entity: getSystemEntities()){
-			// update entity position based on its velocity
 			auto& transform = entity.getComponent<TransformComponent>();
 			const auto rigidbody = entity.getComponent<RigidbodyComponent>();
 
