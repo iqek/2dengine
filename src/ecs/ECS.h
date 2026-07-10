@@ -1,11 +1,12 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-#include <bitset>
 #include <vector>
-#include <unordered_map>
 #include <typeindex>
+#include <bitset>
+#include <unordered_map>
 #include <set>
+#include <deque>
 #include <memory>
 #include <cstdint>
 
@@ -36,6 +37,7 @@ private:
 public:
 	Entity(uint32_t id): id(id) {};
 	Entity(const Entity& entity) = default;
+	void kill();
 	uint32_t getId() const;
 
 	Entity& operator =(const Entity& other) = default;
@@ -144,16 +146,24 @@ private:
 
 	// set of entities that are flagged to be added or removed in the next registry update
 	std::set<Entity> entitiesToBeAdded;
-	std::set<Entity> enitiesToBeKilled;
+	std::set<Entity> entitiesToBeKilled;
+
+	// list of free entity ids that were previously removed
+	std::deque<int> freeIds;
 
 public:
-	Registry() = default;
+	Registry(){
+		spdlog::info("Registry constructor called");
+	}
+
+	~Registry(){
+		spdlog::info("Registry destructor called");
+	}
 
 	void update();
 
 	Entity createEntity();
-	void addEntityToSystem(Entity entity);
-	Entity killEntity();
+	void killEntity(Entity entity);
 
 	// Component management
 	template<typename TComponent, typename ...TArgs> void addComponent(Entity entity, TArgs&& ...args);
@@ -167,8 +177,9 @@ public:
 	template<typename TSystem> bool hasSystem() const;
 	template<typename TSystem> TSystem& getSystem() const;
 
-	// check the component signature of an entity and add to the systems
+	// add and remove entities from their systems
 	void addEntityToSystems(Entity entity);
+	void removeEntityFromSystems(Entity entity);
 };
 
 

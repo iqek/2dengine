@@ -7,6 +7,10 @@ uint32_t Entity::getId() const {
 	return id;
 }
 
+void Entity::kill(){
+	registry->killEntity(*this);
+}
+
 void System::addEntityToSystem(Entity entity) {
 	entities.push_back(entity);
 }
@@ -28,18 +32,28 @@ const Signature& System::getComponentSignature() const{
 
 Entity Registry::createEntity(){
 	uint32_t entityId;
-	entityId = numEntities++;
 
+	if(freeIds.empty()){
+		// if there are no free ids to be reused
+		entityId = numEntities++;
+		if(entityId >= entityComponentSignatures.size()){
+			entityComponentSignatures.resize(entityId + 1);
+		}
+	} else {
+		entityId = freeIds.front();
+		freeIds.pop_front();
+	}
+	
 	Entity entity(entityId);
 	entity.registry = this;
 	entitiesToBeAdded.insert(entity);
 
-	if(entityId >= entityComponentSignatures.size()){
-		entityComponentSignatures.resize(entityId + 1);
-	}
-
 	spdlog::info("Entity created with id = {}", entityId);
 	return entity;
+}
+
+void Registry::killEntity(Entity entity){
+	entitiesToBeKilled.insert(entity);
 }
 
 void Registry::addEntityToSystems(Entity entity){
@@ -59,12 +73,26 @@ void Registry::addEntityToSystems(Entity entity){
 	}
 }
 
+void Registry::removeEntityFromSystems(Entity entity){
+	for(auto system: systems){
+		system.second->removeEntityFromSystem(entity);
+	}
+}
+
 void Registry::update(){
-	// Add the entities that are waiting to be created to the active systems
+	// Processing the entities that are waiting to be created to the active systems
 	for(auto entity: entitiesToBeAdded){
 		addEntityToSystems(entity);
 	}
 	entitiesToBeAdded.clear();
 
-	// Remove the enitites that are waiting to be killed from the active systems
+	// Process the enitites that are waiting to be killed from the active systems
+	for(auto entity: entitiesToBeKilled){
+		removeEntityFromSystems(entity);
+		entityComponentSignatures[entity.getId()].reset();
+
+		// make the entity id available to be reused
+		freeIds.push_back(entity.getId());
+	}
+	entitiesToBeKilled.clear();
 }

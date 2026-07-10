@@ -4,9 +4,12 @@
 #include "../components/RigidbodyComponent.h"
 #include "../components/SpriteComponent.h"
 #include "../components/AnimationComponent.h"
+#include "../components/BoxColliderComponent.h"
 #include "../systems/MovementSystem.h"
 #include "../systems/RenderSystem.h"
 #include "../systems/AnimationSystem.h"
+#include "../systems/CollisionSystem.h"
+#include "../systems/DebugRenderSystem.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
@@ -16,6 +19,7 @@
 
 Game::Game() {
 	isRunning = false;
+	isDebug = false;
 	registry = std::make_unique<Registry>();
 	resources = std::make_unique<ResourceManager>();
 	spdlog::info("Game constructor called");
@@ -66,6 +70,9 @@ void Game::processInput(){
 				if (sdlEvent.key.key == SDLK_ESCAPE) {
 					isRunning = false;
 				}
+				if(sdlEvent.key.key == SDLK_P){
+					isDebug = !isDebug;
+				}
 				break;
 		}
 	}
@@ -76,6 +83,8 @@ void Game::loadLevel(int level){
 	registry->addSystem<MovementSystem>();
 	registry->addSystem<RenderSystem>();
 	registry->addSystem<AnimationSystem>();
+	registry->addSystem<CollisionSystem>();
+	registry->addSystem<DebugRenderSystem>();
 
 	// adding assets to the ResourceManager
 	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
@@ -117,22 +126,24 @@ void Game::loadLevel(int level){
 	mapFile.close();
 
 	// create an entity
-	Entity tank = registry->createEntity();
+	Entity chopper = registry->createEntity();
 	// add a component to the entity
-	tank.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	tank.addComponent<RigidbodyComponent>(glm::vec2(30.0, 0.0));
+	chopper.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
+	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
+	chopper.addComponent<AnimationComponent>(2, 12, true);
+	
+	Entity tank = registry->createEntity();
+	tank.addComponent<TransformComponent>(glm::vec2(500.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
+	tank.addComponent<RigidbodyComponent>(glm::vec2(-30.0, 0.0));
 	tank.addComponent<SpriteComponent>("tank-image", 32, 32, 1);
+	tank.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
 
 	Entity truck = registry->createEntity();
 	truck.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
 	truck.addComponent<RigidbodyComponent>(glm::vec2(20.0, 0.0));
 	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
-
-	Entity chopper = registry->createEntity();
-	chopper.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
-	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
-	chopper.addComponent<AnimationComponent>(2, 12, true);
+	truck.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
 
 	Entity radar = registry->createEntity();
 	radar.addComponent<TransformComponent>(glm::vec2((windowWidth - 74), 10.0), glm::vec2(1.0, 1.0), 0.0);
@@ -155,6 +166,7 @@ void Game::update(){
 	// invoke all systems that need to update
 	registry->getSystem<MovementSystem>().update(deltaTime);
 	registry->getSystem<AnimationSystem>().update();
+	registry->getSystem<CollisionSystem>().update();
 }
 
 void Game::render() {
@@ -163,7 +175,9 @@ void Game::render() {
 
 	// invoke all systems that need to render
 	registry->getSystem<RenderSystem>().update(renderer, *resources);
-
+	if(isDebug){
+		registry->getSystem<DebugRenderSystem>().update(renderer);
+	}
 	SDL_RenderPresent(renderer);
 }
 

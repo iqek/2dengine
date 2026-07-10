@@ -3,12 +3,12 @@
 #include <SDL3_image/SDL_image.h>
 
 ResourceManager::ResourceManager(){
-    spdlog::info("resource manager constructor called");
+    spdlog::info("Resource manager constructor called");
 }
 
 ResourceManager::~ResourceManager(){
     clear();
-    spdlog::info("resource manager destructor called");
+    spdlog::info("Resource manager destructor called");
 }
 
 void ResourceManager::clear(){
@@ -26,7 +26,7 @@ void ResourceManager::addTexture(SDL_Renderer* renderer, const std::string& key,
 
     textures.emplace(key, texture);
 
-    spdlog::info("new texture added to resources with key {}", key);
+    spdlog::info("New texture added to resources with key {}", key);
 }
 
 SDL_Texture* ResourceManager::getTexture(const std::string& key){
