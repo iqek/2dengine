@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include "../ecs/ECS.h"
 #include "../resources/ResourceManager.h"
+#include "../event_manager/EventBus.h"
 
 constexpr int FPS = 60;
 constexpr int MILLISECS_PER_FRAME = 1000 / FPS;
@@ -17,6 +18,7 @@ private:
 
 	std::unique_ptr<Registry> registry;
 	std::unique_ptr<ResourceManager> resources;
+	std::unique_ptr<EventBus> eventBus;
 
 public:
 	Game();

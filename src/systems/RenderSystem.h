@@ -14,7 +14,7 @@ public:
         requireComponent<SpriteComponent>();
     }
 
-    void update(SDL_Renderer* renderer, ResourceManager& resources){
+    void update(SDL_Renderer* renderer, ResourceManager* resources){
         auto entities = getSystemEntities();
 
         std::stable_sort(entities.begin(), entities.end(), [](const Entity& a, const Entity& b){
@@ -37,8 +37,8 @@ public:
             };
 
             SDL_RenderTextureRotated(
-                renderer, 
-                resources.getTexture(sprite.name),
+                renderer,
+                resources->getTexture(sprite.name),
                 &srcRect, 
                 &dstRect,
                 transform.rotation,

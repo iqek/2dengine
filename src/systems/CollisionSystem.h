@@ -3,7 +3,8 @@
 #include "../ecs/ECS.h"
 #include "../components/BoxColliderComponent.h"
 #include "../components/TransformComponent.h"
-#include <spdlog/spdlog.h>
+#include "../event_manager/EventBus.h"
+#include "../events/CollisionEvent.h"
 
 class CollisionSystem: public System {
 public:
@@ -12,7 +13,7 @@ public:
         requireComponent<TransformComponent>();
     }
 
-    void update(){
+    void update(EventBus* eventBus) {
         auto entities = getSystemEntities();
 
         for(auto entity: entities){
@@ -46,6 +47,7 @@ public:
                     bCollider.isColliding = true;
 
                     // emit an event ...
+                    eventBus->emitEvent<CollisionEvent>(a, b);
                 }
             }
         }

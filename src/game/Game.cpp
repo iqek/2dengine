@@ -9,6 +9,8 @@
 #include "../systems/RenderSystem.h"
 #include "../systems/AnimationSystem.h"
 #include "../systems/CollisionSystem.h"
+#include "../systems/DamageSystem.h"
+#include "../systems/KeyboardControlSystem.h"
 #include "../systems/DebugRenderSystem.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
@@ -22,6 +24,7 @@ Game::Game() {
 	isDebug = false;
 	registry = std::make_unique<Registry>();
 	resources = std::make_unique<ResourceManager>();
+	eventBus = std::make_unique<EventBus>();
 	spdlog::info("Game constructor called");
 }
 
@@ -73,6 +76,7 @@ void Game::processInput(){
 				if(sdlEvent.key.key == SDLK_P){
 					isDebug = !isDebug;
 				}
+				eventBus->emitEvent<KeyPressedEvent>(sdlEvent.key.key);
 				break;
 		}
 	}
@@ -84,6 +88,8 @@ void Game::loadLevel(int level){
 	registry->addSystem<RenderSystem>();
 	registry->addSystem<AnimationSystem>();
 	registry->addSystem<CollisionSystem>();
+	registry->addSystem<DamageSystem>();
+	registry->addSystem<KeyboardControlSystem>();
 	registry->addSystem<DebugRenderSystem>();
 
 	// adding assets to the ResourceManager
@@ -160,13 +166,20 @@ void Game::update(){
 	double deltaTime = (SDL_GetTicks() - millisecsPreviousFrame) / 1000.0;
 	millisecsPreviousFrame = SDL_GetTicks();
 
+	// reset al event handlers for the current frame
+	eventBus->reset();
+	// perform the subscription of events for all systems
+	registry->getSystem<DamageSystem>().listenToEvents(eventBus.get());
+	registry->getSystem<KeyboardControlSystem>().listenToEvents(eventBus.get());
+	// improvement: subscribe once when a system/entity is created, unsubscribe when it's destroyed so that this doesn't get called every update
+
 	// update the registry to process the entities that are waiting to be created/deleted
 	registry->update();
 
 	// invoke all systems that need to update
 	registry->getSystem<MovementSystem>().update(deltaTime);
 	registry->getSystem<AnimationSystem>().update();
-	registry->getSystem<CollisionSystem>().update();
+	registry->getSystem<CollisionSystem>().update(eventBus.get());
 }
 
 void Game::render() {
@@ -174,7 +187,7 @@ void Game::render() {
 	SDL_RenderClear(renderer);
 
 	// invoke all systems that need to render
-	registry->getSystem<RenderSystem>().update(renderer, *resources);
+	registry->getSystem<RenderSystem>().update(renderer, resources.get());
 	if(isDebug){
 		registry->getSystem<DebugRenderSystem>().update(renderer);
 	}
