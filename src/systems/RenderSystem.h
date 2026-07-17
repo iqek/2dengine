@@ -14,7 +14,7 @@ public:
         requireComponent<SpriteComponent>();
     }
 
-    void update(SDL_Renderer* renderer, ResourceManager* resources){
+    void update(SDL_Renderer* renderer, ResourceManager* resources, SDL_FRect& camera){
         auto entities = getSystemEntities();
 
         std::stable_sort(entities.begin(), entities.end(), [](const Entity& a, const Entity& b){
@@ -30,8 +30,8 @@ public:
 
             // set the destination rectangle with the x,y position to be rendered
             SDL_FRect dstRect = {
-                static_cast<float>(transform.position.x), 
-                static_cast<float>(transform.position.y),
+                static_cast<float>(transform.position.x - (sprite.isFixed? 0 : camera.x)),
+                static_cast<float>(transform.position.y - (sprite.isFixed? 0 : camera.y)),
                 static_cast<float>(sprite.width * transform.scale.x), 
                 static_cast<float>(sprite.height * transform.scale.y)
             };

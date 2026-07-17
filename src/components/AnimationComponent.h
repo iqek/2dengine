@@ -9,11 +9,7 @@ struct AnimationComponent{
     bool isLoop;
     int startTime;
     
-    AnimationComponent(int frameNum = 1, int frameSpeed = 1, bool isLoop = true){
-        this->frameNum = frameNum;
-        this->currFrame = 1;
-        this->frameSpeed = frameSpeed;
-        this->isLoop = isLoop;
-        this->startTime = SDL_GetTicks();
-    }
+    AnimationComponent(int frameNum = 1, int frameSpeed = 1, bool isLoop = true)
+        : frameNum(frameNum), currFrame(1), frameSpeed(frameSpeed), isLoop(isLoop), startTime(SDL_GetTicks())
+    {}
 };

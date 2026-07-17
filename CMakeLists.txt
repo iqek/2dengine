@@ -17,7 +17,12 @@ pkg_check_modules(SDL3 REQUIRED sdl3)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Create executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES}
+        src/components/ProjectileEmitterComponent.h
+        src/systems/ProjectileEmitSystem.h
+        src/components/HealthComponent.h
+        src/components/ProjectileComponent.h
+        src/systems/ProjectileLifecycleSystem.h)
 
 # Include dirs
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -28,6 +33,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_directories(${PROJECT_NAME} PRIVATE ${SDL3_LIBRARY_DIRS})
+if(APPLE)
+    target_link_directories(${PROJECT_NAME} PRIVATE /opt/homebrew/lib)
+endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${SDL3_LIBRARIES}
     SDL3_image

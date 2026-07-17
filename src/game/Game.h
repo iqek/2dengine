@@ -15,6 +15,7 @@ private:
 	bool isDebug;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	SDL_FRect camera;
 
 	std::unique_ptr<Registry> registry;
 	std::unique_ptr<ResourceManager> resources;
@@ -32,6 +33,8 @@ public:
 	void render();
 	void destroy();
 
-	int windowWidth;
-	int windowHeight;
+	static int windowWidth;
+	static int windowHeight;
+	static int mapWidth;
+	static int mapHeight;
 };

@@ -5,11 +5,18 @@
 #include "../components/SpriteComponent.h"
 #include "../components/AnimationComponent.h"
 #include "../components/BoxColliderComponent.h"
+#include "../components/HealthComponent.h"
+#include "../components/KeyboardControlledComponent.h"
+#include "../components/CameraFollowComponent.h"
+#include "../components/ProjectileEmitterComponent.h"
 #include "../systems/MovementSystem.h"
+#include "../systems/CameraMovementSystem.h"
 #include "../systems/RenderSystem.h"
 #include "../systems/AnimationSystem.h"
 #include "../systems/CollisionSystem.h"
 #include "../systems/DamageSystem.h"
+#include "../systems/ProjectileEmitSystem.h"
+#include "../systems/ProjectileLifecycleSystem.h"
 #include "../systems/KeyboardControlSystem.h"
 #include "../systems/DebugRenderSystem.h"
 #include <SDL3/SDL.h>
@@ -19,12 +26,20 @@
 #include <iostream>
 #include <fstream>
 
-Game::Game() {
-	isRunning = false;
-	isDebug = false;
-	registry = std::make_unique<Registry>();
-	resources = std::make_unique<ResourceManager>();
-	eventBus = std::make_unique<EventBus>();
+#include "../components/HealthComponent.h"
+
+int Game::windowWidth;
+int Game::windowHeight;
+int Game::mapWidth;
+int Game::mapHeight;
+
+Game::Game()
+	: isRunning(false),
+	  isDebug(false),
+	  registry(std::make_unique<Registry>()),
+	  resources(std::make_unique<ResourceManager>()),
+	  eventBus(std::make_unique<EventBus>())
+{
 	spdlog::info("Game constructor called");
 }
 
@@ -59,6 +74,12 @@ void Game::initialize(){
 
 	SDL_SetWindowFullscreen(window, true);
 
+	// Initialize the camera view with the entire screen area
+	camera.x = 0;
+	camera.y = 0;
+	camera.w = windowWidth;
+	camera.h = windowHeight;
+
 	isRunning = true;
 }
 
@@ -91,14 +112,18 @@ void Game::loadLevel(int level){
 	registry->addSystem<DamageSystem>();
 	registry->addSystem<KeyboardControlSystem>();
 	registry->addSystem<DebugRenderSystem>();
+	registry->addSystem<CameraMovementSystem>();
+	registry->addSystem<ProjectileEmitSystem>();
+	registry->addSystem<ProjectileLifecycleSystem>();
 
 	// adding assets to the ResourceManager
 	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
 	resources->addTexture(renderer, "truck-image", "./assets/images/truck-ford-right.png");
-	resources->addTexture(renderer, "chopper-image", "./assets/images/chopper.png");
+	resources->addTexture(renderer, "chopper-image", "./assets/images/chopper-spritesheet.png");
 	resources->addTexture(renderer, "radar-image", "./assets/images/radar.png");
 	resources->addTexture(renderer, "tilemap-image", "./assets/tilemaps/jungle.png");
-	
+	resources->addTexture(renderer, "bullet-image", "./assets/images/bullet.png");
+
 	// load the tilemap
 	int tileSize = 32;
 	int mapCols = 25;
@@ -126,35 +151,45 @@ void Game::loadLevel(int level){
 				glm::vec2(x * (tileScale * tileSize), y * (tileScale * tileSize)),
 				glm::vec2(tileScale, tileScale)
 			);
-			tile.addComponent<SpriteComponent>("tilemap-image", tileSize, tileSize, 0, srcRectX, srcRectY);
+			tile.addComponent<SpriteComponent>("tilemap-image", tileSize, tileSize, 0, false, srcRectX, srcRectY);
 		}
 	}
 	mapFile.close();
+	mapWidth = mapCols * tileSize * tileScale;
+	mapHeight = mapRows * tileSize * tileScale;
 
 	// create an entity
 	Entity chopper = registry->createEntity();
-	// add a component to the entity
+	// add components to the entity
 	chopper.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
 	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
 	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
 	chopper.addComponent<AnimationComponent>(2, 12, true);
-	
+	chopper.addComponent<ProjectileEmitterComponent>(glm::vec2(150.0, 150.0), 0, 10000, 0, true);
+	chopper.addComponent<KeyboardControlledComponent>(glm::vec2(0, -80), glm::vec2(80, 0), glm::vec2(0, 80), glm::vec2(-80, 0));
+	chopper.addComponent<CameraFollowComponent>();
+	chopper.addComponent<HealthComponent>(100);
+
 	Entity tank = registry->createEntity();
 	tank.addComponent<TransformComponent>(glm::vec2(500.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	tank.addComponent<RigidbodyComponent>(glm::vec2(-30.0, 0.0));
+	tank.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
 	tank.addComponent<SpriteComponent>("tank-image", 32, 32, 1);
 	tank.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
+	tank.addComponent<ProjectileEmitterComponent>(glm::vec2(100.0, 0.0), 5000, 3000, 0, false);
+	tank.addComponent<HealthComponent>(100);
 
 	Entity truck = registry->createEntity();
 	truck.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	truck.addComponent<RigidbodyComponent>(glm::vec2(20.0, 0.0));
+	truck.addComponent<RigidbodyComponent>(glm::vec2(  0.0, 0.0));
 	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
 	truck.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
+	truck.addComponent<ProjectileEmitterComponent>(glm::vec2(0.0, 100.0), 2000, 5000, 0, false);
+	truck.addComponent<HealthComponent>(100);
 
 	Entity radar = registry->createEntity();
 	radar.addComponent<TransformComponent>(glm::vec2((windowWidth - 74), 10.0), glm::vec2(1.0, 1.0), 0.0);
 	radar.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
-	radar.addComponent<SpriteComponent>("radar-image", 64, 64, 2);
+	radar.addComponent<SpriteComponent>("radar-image", 64, 64, 2, true);
 	radar.addComponent<AnimationComponent>(8, 5, true);
 }
 
@@ -171,6 +206,7 @@ void Game::update(){
 	// perform the subscription of events for all systems
 	registry->getSystem<DamageSystem>().listenToEvents(eventBus.get());
 	registry->getSystem<KeyboardControlSystem>().listenToEvents(eventBus.get());
+	registry->getSystem<ProjectileEmitSystem>().listenToEvents(eventBus.get());
 	// improvement: subscribe once when a system/entity is created, unsubscribe when it's destroyed so that this doesn't get called every update
 
 	// update the registry to process the entities that are waiting to be created/deleted
@@ -178,7 +214,10 @@ void Game::update(){
 
 	// invoke all systems that need to update
 	registry->getSystem<MovementSystem>().update(deltaTime);
+	registry->getSystem<CameraMovementSystem>().update(camera);
 	registry->getSystem<AnimationSystem>().update();
+	registry->getSystem<ProjectileLifecycleSystem>().update();
+	registry->getSystem<ProjectileEmitSystem>().update(registry.get());
 	registry->getSystem<CollisionSystem>().update(eventBus.get());
 }
 
@@ -187,9 +226,9 @@ void Game::render() {
 	SDL_RenderClear(renderer);
 
 	// invoke all systems that need to render
-	registry->getSystem<RenderSystem>().update(renderer, resources.get());
+	registry->getSystem<RenderSystem>().update(renderer, resources.get(), camera);
 	if(isDebug){
-		registry->getSystem<DebugRenderSystem>().update(renderer);
+		registry->getSystem<DebugRenderSystem>().update(renderer, camera);
 	}
 	SDL_RenderPresent(renderer);
 }

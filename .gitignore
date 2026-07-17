@@ -3,3 +3,6 @@ build/
 2dengine
 
 znotes
+
+.idea/
+cmake-build-*/

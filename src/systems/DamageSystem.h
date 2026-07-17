@@ -16,9 +16,9 @@ public:
     }
 
     void onCollision(CollisionEvent& event) {
-        spdlog::info("the damage system recieved an event colllisin between entities bla bla");
-        event.a.kill();
-        event.b.kill();
+        spdlog::info("the damage system received an event collision between entities {} {}", std::to_string(event.a.getId()), std::to_string(event.b.getId()));
+        //event.a.kill();
+        //event.b.kill();
     }
 
     void update() {
