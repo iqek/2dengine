@@ -53,7 +53,7 @@ public:
         }
     }
 
-    bool checkAABBCollision(double aX, double aY, double aW, double aH, double bX, double bY, double bW, double bH){
+    bool checkAABBCollision(float aX, float aY, float aW, float aH, float bX, float bY, float bW, float bH){
         return (
             aX < bX + bW && 
             aX + aW > bX && 

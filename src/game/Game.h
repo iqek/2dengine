@@ -10,7 +10,7 @@ constexpr int MILLISECS_PER_FRAME = 1000 / FPS;
 
 class Game {
 private:
-	int millisecsPreviousFrame = 0;
+	Uint64 millisecsPreviousFrame = 0;
 	bool isRunning;
 	bool isDebug;
 	SDL_Window* window;

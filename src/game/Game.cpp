@@ -9,9 +9,11 @@
 #include "../components/KeyboardControlledComponent.h"
 #include "../components/CameraFollowComponent.h"
 #include "../components/ProjectileEmitterComponent.h"
+#include "../components/TextLabelComponent.h"
 #include "../systems/MovementSystem.h"
 #include "../systems/CameraMovementSystem.h"
 #include "../systems/RenderSystem.h"
+#include "../systems/RenderTextSystem.h"
 #include "../systems/AnimationSystem.h"
 #include "../systems/CollisionSystem.h"
 #include "../systems/DamageSystem.h"
@@ -19,14 +21,16 @@
 #include "../systems/ProjectileLifecycleSystem.h"
 #include "../systems/KeyboardControlSystem.h"
 #include "../systems/DebugRenderSystem.h"
+#include "../systems/HealthBarRenderSystem.h"
+#include "../systems/RenderGUISystem.h"
 #include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_sdl3.h>
+#include <imgui/imgui_impl_sdlrenderer3.h>
 #include <iostream>
 #include <fstream>
-
-#include "../components/HealthComponent.h"
 
 int Game::windowWidth;
 int Game::windowHeight;
@@ -53,18 +57,23 @@ void Game::initialize(){
 		return;
 	}
 
+	if (!TTF_Init()) {
+		spdlog::error("Error initializing ttf");
+		return;
+	}
+
 	const SDL_DisplayMode* displayMode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
 	windowWidth = displayMode->w;
 	windowHeight = displayMode->h;
 
-	window = SDL_CreateWindow(NULL, windowWidth, windowHeight, SDL_WINDOW_BORDERLESS);
+	window = SDL_CreateWindow(nullptr, windowWidth, windowHeight, SDL_WINDOW_BORDERLESS);
 
 	if (!window) {
 		spdlog::error("Error creating SDL window");
 		return;
 	}
 
-	renderer = SDL_CreateRenderer(window, NULL);
+	renderer = SDL_CreateRenderer(window, nullptr);
 	SDL_SetRenderVSync(renderer, 1);
 
 	if (!renderer){
@@ -72,7 +81,10 @@ void Game::initialize(){
 		return;
 	}
 
-	SDL_SetWindowFullscreen(window, true);
+	// Initialize the ImGui context
+	ImGui::CreateContext();
+	ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+	ImGui_ImplSDLRenderer3_Init(renderer);
 
 	// Initialize the camera view with the entire screen area
 	camera.x = 0;
@@ -80,12 +92,23 @@ void Game::initialize(){
 	camera.w = windowWidth;
 	camera.h = windowHeight;
 
+	SDL_SetWindowFullscreen(window, true);
 	isRunning = true;
 }
 
 void Game::processInput(){
 	SDL_Event sdlEvent;
 	while (SDL_PollEvent(&sdlEvent)){
+		// ImGui SDL input
+		ImGui_ImplSDL3_ProcessEvent(&sdlEvent);
+		ImGuiIO& io = ImGui::GetIO(); (void) io;
+		float mouseX, mouseY;
+		const int buttons = SDL_GetMouseState(&mouseX, &mouseY);
+		io.MousePos = ImVec2(mouseX, mouseY);
+		io.MouseDown[0] = buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT);
+		io.MouseDown[1] = buttons & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT);
+
+		// Handle core SDL events
 		switch(sdlEvent.type) {
 			case SDL_EVENT_QUIT:
 				isRunning = false;
@@ -94,7 +117,7 @@ void Game::processInput(){
 				if (sdlEvent.key.key == SDLK_ESCAPE) {
 					isRunning = false;
 				}
-				if(sdlEvent.key.key == SDLK_P){
+				if(sdlEvent.key.key == SDLK_D){
 					isDebug = !isDebug;
 				}
 				eventBus->emitEvent<KeyPressedEvent>(sdlEvent.key.key);
@@ -115,6 +138,9 @@ void Game::loadLevel(int level){
 	registry->addSystem<CameraMovementSystem>();
 	registry->addSystem<ProjectileEmitSystem>();
 	registry->addSystem<ProjectileLifecycleSystem>();
+	registry->addSystem<RenderTextSystem>();
+	registry->addSystem<HealthBarRenderSystem>();
+	registry->addSystem<RenderGUISystem>();
 
 	// adding assets to the ResourceManager
 	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
@@ -124,11 +150,15 @@ void Game::loadLevel(int level){
 	resources->addTexture(renderer, "tilemap-image", "./assets/tilemaps/jungle.png");
 	resources->addTexture(renderer, "bullet-image", "./assets/images/bullet.png");
 
+	resources->addFont("charriot-font-30", "./assets/fonts/charriot.ttf", 30);
+	resources->addFont("pico8-font-5", "./assets/fonts/pico8.ttf", 5);
+	resources->addFont("pico8-font-10", "./assets/fonts/pico8.ttf", 10);
+
 	// load the tilemap
 	int tileSize = 32;
 	int mapCols = 25;
 	int mapRows = 20;
-	double tileScale = 3.0;
+	float tileScale = 3.0f;
 	std::fstream mapFile;
 	mapFile.open("./assets/tilemaps/jungle.map");
 
@@ -147,6 +177,7 @@ void Game::loadLevel(int level){
 			mapFile.ignore();
 
 			Entity tile = registry->createEntity();
+			tile.group("tiles");
 			tile.addComponent<TransformComponent>(
 				glm::vec2(x * (tileScale * tileSize), y * (tileScale * tileSize)),
 				glm::vec2(tileScale, tileScale)
@@ -155,42 +186,51 @@ void Game::loadLevel(int level){
 		}
 	}
 	mapFile.close();
-	mapWidth = mapCols * tileSize * tileScale;
-	mapHeight = mapRows * tileSize * tileScale;
+	mapWidth = static_cast<int>(mapCols * tileSize * tileScale);
+	mapHeight = static_cast<int>(mapRows * tileSize * tileScale);
 
 	// create an entity
 	Entity chopper = registry->createEntity();
+	chopper.tag("player");
 	// add components to the entity
-	chopper.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	chopper.addComponent<TransformComponent>(glm::vec2(10.0f, 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
+	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
 	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
 	chopper.addComponent<AnimationComponent>(2, 12, true);
-	chopper.addComponent<ProjectileEmitterComponent>(glm::vec2(150.0, 150.0), 0, 10000, 0, true);
+	chopper.addComponent<BoxColliderComponent>(32, 32);
+	chopper.addComponent<ProjectileEmitterComponent>(glm::vec2(150.0f, 150.0f), 0, 10000, 10, true);
 	chopper.addComponent<KeyboardControlledComponent>(glm::vec2(0, -80), glm::vec2(80, 0), glm::vec2(0, 80), glm::vec2(-80, 0));
 	chopper.addComponent<CameraFollowComponent>();
 	chopper.addComponent<HealthComponent>(100);
 
 	Entity tank = registry->createEntity();
-	tank.addComponent<TransformComponent>(glm::vec2(500.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	tank.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	tank.group("enemies");
+	tank.addComponent<TransformComponent>(glm::vec2(500.0f, 200.0f), glm::vec2(1.0f, 1.0f), 0.0f);
+	tank.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
 	tank.addComponent<SpriteComponent>("tank-image", 32, 32, 1);
-	tank.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
-	tank.addComponent<ProjectileEmitterComponent>(glm::vec2(100.0, 0.0), 5000, 3000, 0, false);
+	tank.addComponent<BoxColliderComponent>(32, 32);
+	tank.addComponent<ProjectileEmitterComponent>(glm::vec2(100.0f, 0.0f), 5000, 3000, 10, false);
 	tank.addComponent<HealthComponent>(100);
 
 	Entity truck = registry->createEntity();
-	truck.addComponent<TransformComponent>(glm::vec2(10.0, 10.0), glm::vec2(1.0, 1.0), 0.0);
-	truck.addComponent<RigidbodyComponent>(glm::vec2(  0.0, 0.0));
+	truck.group("enemies");
+	truck.addComponent<TransformComponent>(glm::vec2(10.0f, 200.0f), glm::vec2(1.0f, 1.0f), 0.0f);
+	truck.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
 	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
-	truck.addComponent<BoxColliderComponent>(32, 32, glm::vec2(0));
-	truck.addComponent<ProjectileEmitterComponent>(glm::vec2(0.0, 100.0), 2000, 5000, 0, false);
+	truck.addComponent<BoxColliderComponent>(32, 32);
+	truck.addComponent<ProjectileEmitterComponent>(glm::vec2(0.0f, 100.0f), 2000, 5000, 10, false);
 	truck.addComponent<HealthComponent>(100);
 
 	Entity radar = registry->createEntity();
-	radar.addComponent<TransformComponent>(glm::vec2((windowWidth - 74), 10.0), glm::vec2(1.0, 1.0), 0.0);
-	radar.addComponent<RigidbodyComponent>(glm::vec2(0.0, 0.0));
+	radar.addComponent<TransformComponent>(glm::vec2(static_cast<float>(windowWidth - 74), 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
+	radar.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
 	radar.addComponent<SpriteComponent>("radar-image", 64, 64, 2, true);
 	radar.addComponent<AnimationComponent>(8, 5, true);
+
+	Entity label = registry->createEntity();
+	label.addComponent<TransformComponent>(glm::vec2(windowWidth/2 - 40, 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
+	SDL_Color white = { 255, 255, 255, 255 };
+	label.addComponent<TextLabelComponent>("CHOPPER 1.0", "charriot-font-30", white, true);
 }
 
 void Game::setup() {
@@ -227,8 +267,12 @@ void Game::render() {
 
 	// invoke all systems that need to render
 	registry->getSystem<RenderSystem>().update(renderer, resources.get(), camera);
+	registry->getSystem<RenderTextSystem>().update(renderer, resources.get(), camera);
+	registry->getSystem<HealthBarRenderSystem>().update(renderer, resources.get(), camera);
 	if(isDebug){
 		registry->getSystem<DebugRenderSystem>().update(renderer, camera);
+
+		registry->getSystem<RenderGUISystem>().update(renderer, registry.get());
 	}
 	SDL_RenderPresent(renderer);
 }
@@ -243,6 +287,9 @@ void Game::run(){
 }
 
 void Game::destroy(){
+	ImGui_ImplSDLRenderer3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImGui::DestroyContext();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

@@ -16,13 +16,28 @@ pkg_check_modules(SDL3 REQUIRED sdl3)
 # Collect sources
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
+# ImGui sources (SDL3 + SDL_Renderer backend)
+set(IMGUI_SOURCES
+    libs/imgui/imgui.cpp
+    libs/imgui/imgui_draw.cpp
+    libs/imgui/imgui_tables.cpp
+    libs/imgui/imgui_widgets.cpp
+    libs/imgui/imgui_demo.cpp
+    libs/imgui/imgui_impl_sdl3.cpp
+    libs/imgui/imgui_impl_sdlrenderer3.cpp
+        src/systems/RenderGUISystem.h
+)
+
 # Create executable
-add_executable(${PROJECT_NAME} ${SOURCES}
+add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES}
         src/components/ProjectileEmitterComponent.h
         src/systems/ProjectileEmitSystem.h
         src/components/HealthComponent.h
         src/components/ProjectileComponent.h
-        src/systems/ProjectileLifecycleSystem.h)
+        src/systems/ProjectileLifecycleSystem.h
+        src/components/TextLabelComponent.h
+        src/systems/RenderTextSystem.h
+        src/systems/HealthBarRenderSystem.h)
 
 # Include dirs
 target_include_directories(${PROJECT_NAME} PRIVATE

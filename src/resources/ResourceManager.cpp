@@ -16,6 +16,11 @@ void ResourceManager::clear(){
         SDL_DestroyTexture(texture.second);
     }
     textures.clear();
+
+    for(auto font:fonts){
+        TTF_CloseFont(font.second);
+    }
+    fonts.clear();
 }
 
 void ResourceManager::addTexture(SDL_Renderer* renderer, const std::string& key, const std::string& filePath){
@@ -31,4 +36,12 @@ void ResourceManager::addTexture(SDL_Renderer* renderer, const std::string& key,
 
 SDL_Texture* ResourceManager::getTexture(const std::string& key){
     return textures[key];
+}
+
+void ResourceManager::addFont(const std::string& key, const std::string& filePath, int fontSize) {
+    fonts.emplace(key, TTF_OpenFont(filePath.c_str(), fontSize));
+}
+
+TTF_Font* ResourceManager::getFont(const std::string& key) {
+    return fonts[key];
 }

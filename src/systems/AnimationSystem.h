@@ -17,8 +17,8 @@ public:
 			auto& animation = entity.getComponent<AnimationComponent>();
             auto& sprite = entity.getComponent<SpriteComponent>();
 
-            animation.currFrame = ((SDL_GetTicks() - animation.startTime) * animation.frameSpeed / 1000) % animation.frameNum;
-            sprite.srcRect.x = animation.currFrame * sprite.width;
+            animation.currFrame = static_cast<int>((SDL_GetTicks() - animation.startTime) * animation.frameSpeed / 1000 % animation.frameNum);
+            sprite.srcRect.x = static_cast<float>(animation.currFrame * sprite.width);
         }
 	}
 };

@@ -9,6 +9,7 @@
 #include "../components/SpriteComponent.h"
 #include "../components/BoxColliderComponent.h"
 #include "../components/ProjectileComponent.h"
+#include "../components/CameraFollowComponent.h"
 #include <SDL3/SDL.h>
 
 class ProjectileEmitSystem : public System {
@@ -49,11 +50,12 @@ public:
                     if (rigidbody.velocity.y > 0) directionY = +1;
                     if (rigidbody.velocity.y < 0) directionY = -1;
                     projectileVelocity.x = projectileEmitter.projectileVelocity.x * directionX;
-                    projectileVelocity.y = projectileEmitter.projectileVelocity.x * directionY;
+                    projectileVelocity.y = projectileEmitter.projectileVelocity.y * directionY;
 
                     // create new projectile entity
                     Entity projectile = entity.registry->createEntity();
-                    projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0, 1.0), 0.0);
+                    projectile.group("projectiles");
+                    projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0f, 1.0f), 0.0f);
                     projectile.addComponent<RigidbodyComponent>(projectileVelocity);
                     projectile.addComponent<SpriteComponent>("bullet-image", 4, 4, 4);
                     projectile.addComponent<BoxColliderComponent>(4, 4);
@@ -83,7 +85,8 @@ public:
 
                 // Add a new projectile entity to the registry
                 Entity projectile = registry->createEntity();
-                projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0, 1.0), 0.0);
+                projectile.group("projectiles");
+                projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0f, 1.0f), 0.0f);
                 projectile.addComponent<RigidbodyComponent>(projectileEmitter.projectileVelocity);
                 projectile.addComponent<SpriteComponent>("bullet-image", 4, 4, 4);
                 projectile.addComponent<BoxColliderComponent>(4, 4);

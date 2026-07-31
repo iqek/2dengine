@@ -30,10 +30,10 @@ public:
 
             // set the destination rectangle with the x,y position to be rendered
             SDL_FRect dstRect = {
-                static_cast<float>(transform.position.x - (sprite.isFixed? 0 : camera.x)),
-                static_cast<float>(transform.position.y - (sprite.isFixed? 0 : camera.y)),
-                static_cast<float>(sprite.width * transform.scale.x), 
-                static_cast<float>(sprite.height * transform.scale.y)
+                transform.position.x - (sprite.isFixed ? 0.0f : camera.x),
+                transform.position.y - (sprite.isFixed ? 0.0f : camera.y),
+                sprite.width * transform.scale.x,
+                sprite.height * transform.scale.y
             };
 
             SDL_RenderTextureRotated(

@@ -20,8 +20,8 @@ public:
             SDL_FRect colliderRect = {
                 transform.position.x + collider.offset.x - camera.x,
                 transform.position.y + collider.offset.y - camera.y,
-                static_cast<float>(collider.width * transform.scale.x),
-                static_cast<float>(collider.height * transform.scale.y)
+                collider.width * transform.scale.x,
+                collider.height * transform.scale.y
             };
             if(collider.isColliding){
                 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
