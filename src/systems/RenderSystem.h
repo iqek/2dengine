@@ -21,6 +21,8 @@ public:
             return a.getComponent<SpriteComponent>().zIndex < b.getComponent<SpriteComponent>().zIndex;
         });
 
+        SDL_FRect screenRect = {0.0f, 0.0f, camera.w, camera.h};
+
         for(auto entity: entities){
             const auto transform = entity.getComponent<TransformComponent>();
             const auto sprite = entity.getComponent<SpriteComponent>();
@@ -36,6 +38,8 @@ public:
                 sprite.height * transform.scale.y
             };
 
+            if(!SDL_HasRectIntersectionFloat(&dstRect, &screenRect)) continue;
+
             SDL_RenderTextureRotated(
                 renderer,
                 resources->getTexture(sprite.name),
@@ -43,7 +47,7 @@ public:
                 &dstRect,
                 transform.rotation,
                 nullptr,
-                SDL_FLIP_NONE
+                sprite.flip
             );
         }
     }

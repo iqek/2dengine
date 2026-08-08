@@ -26,6 +26,10 @@ set(IMGUI_SOURCES
     libs/imgui/imgui_impl_sdl3.cpp
     libs/imgui/imgui_impl_sdlrenderer3.cpp
         src/systems/RenderGUISystem.h
+        src/game/LevelLoader.h
+        src/game/LevelLoader.cpp
+        src/components/ScriptComponent.h
+        src/systems/ScriptSystem.h
 )
 
 # Create executable

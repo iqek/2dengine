@@ -4,6 +4,7 @@
 #include "../components/CameraFollowComponent.h"
 #include "../components/TransformComponent.h"
 #include <SDL3/SDL.h>
+#include <algorithm>
 
 class CameraMovementSystem: public System {
 public:
@@ -24,10 +25,11 @@ public:
             }
 
             // Keep the camera rectangle view inside the map limits
-            camera.x = camera.x < 0 ? 0 : camera.x;
-            camera.y = camera.y < 0 ? 0 : camera.y;
-            camera.x = camera.x > Game::mapWidth - camera.w ? Game::mapWidth - camera.w : camera.x;
-            camera.y = camera.y > Game::mapHeight - camera.h ? Game::mapHeight - camera.h : camera.y;
+            // (if the viewport is bigger than the map on an axis, clamp to 0 instead of a negative offset)
+            float maxCameraX = std::max(0.0f, Game::mapWidth - camera.w);
+            float maxCameraY = std::max(0.0f, Game::mapHeight - camera.h);
+            camera.x = std::clamp(camera.x, 0.0f, maxCameraX);
+            camera.y = std::clamp(camera.y, 0.0f, maxCameraY);
         }
     }
 };

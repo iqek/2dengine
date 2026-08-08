@@ -1,15 +1,6 @@
 #include "Game.h"
+#include "LevelLoader.h"
 #include "../ecs/ECS.h"
-#include "../components/TransformComponent.h"
-#include "../components/RigidbodyComponent.h"
-#include "../components/SpriteComponent.h"
-#include "../components/AnimationComponent.h"
-#include "../components/BoxColliderComponent.h"
-#include "../components/HealthComponent.h"
-#include "../components/KeyboardControlledComponent.h"
-#include "../components/CameraFollowComponent.h"
-#include "../components/ProjectileEmitterComponent.h"
-#include "../components/TextLabelComponent.h"
 #include "../systems/MovementSystem.h"
 #include "../systems/CameraMovementSystem.h"
 #include "../systems/RenderSystem.h"
@@ -23,13 +14,12 @@
 #include "../systems/DebugRenderSystem.h"
 #include "../systems/HealthBarRenderSystem.h"
 #include "../systems/RenderGUISystem.h"
+#include "../systems/ScriptSystem.h"
 #include <SDL3/SDL.h>
-#include <glm/glm.hpp>
 #include <spdlog/spdlog.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl3.h>
 #include <imgui/imgui_impl_sdlrenderer3.h>
-#include <iostream>
 #include <fstream>
 
 int Game::windowWidth;
@@ -126,7 +116,7 @@ void Game::processInput(){
 	}
 }
 
-void Game::loadLevel(int level){
+void Game::setup() {
 	// add the systems that need to be processed in our game
 	registry->addSystem<MovementSystem>();
 	registry->addSystem<RenderSystem>();
@@ -141,100 +131,15 @@ void Game::loadLevel(int level){
 	registry->addSystem<RenderTextSystem>();
 	registry->addSystem<HealthBarRenderSystem>();
 	registry->addSystem<RenderGUISystem>();
+	registry->addSystem<ScriptSystem>();
 
-	// adding assets to the ResourceManager
-	resources->addTexture(renderer, "tank-image", "./assets/images/tank-panther-right.png");
-	resources->addTexture(renderer, "truck-image", "./assets/images/truck-ford-right.png");
-	resources->addTexture(renderer, "chopper-image", "./assets/images/chopper-spritesheet.png");
-	resources->addTexture(renderer, "radar-image", "./assets/images/radar.png");
-	resources->addTexture(renderer, "tilemap-image", "./assets/tilemaps/jungle.png");
-	resources->addTexture(renderer, "bullet-image", "./assets/images/bullet.png");
+	// Create the bindings between C++ and Lua
+	registry->getSystem<ScriptSystem>().createLuaBindings(lua);
 
-	resources->addFont("charriot-font-30", "./assets/fonts/charriot.ttf", 30);
-	resources->addFont("pico8-font-5", "./assets/fonts/pico8.ttf", 5);
-	resources->addFont("pico8-font-10", "./assets/fonts/pico8.ttf", 10);
-
-	// load the tilemap
-	int tileSize = 32;
-	int mapCols = 25;
-	int mapRows = 20;
-	float tileScale = 3.0f;
-	std::fstream mapFile;
-	mapFile.open("./assets/tilemaps/jungle.map");
-
-	if (!mapFile.is_open()) {
-    	spdlog::error("Failed to open tilemap file");
-    	return;
-	}
-
-	for(int y = 0; y < mapRows; y++){
-		for(int x = 0; x < mapCols; x++){
-			char ch;
-			mapFile.get(ch);
-			int srcRectY = std::atoi(&ch) * tileSize;
-			mapFile.get(ch);
-			int srcRectX = std::atoi(&ch) * tileSize;
-			mapFile.ignore();
-
-			Entity tile = registry->createEntity();
-			tile.group("tiles");
-			tile.addComponent<TransformComponent>(
-				glm::vec2(x * (tileScale * tileSize), y * (tileScale * tileSize)),
-				glm::vec2(tileScale, tileScale)
-			);
-			tile.addComponent<SpriteComponent>("tilemap-image", tileSize, tileSize, 0, false, srcRectX, srcRectY);
-		}
-	}
-	mapFile.close();
-	mapWidth = static_cast<int>(mapCols * tileSize * tileScale);
-	mapHeight = static_cast<int>(mapRows * tileSize * tileScale);
-
-	// create an entity
-	Entity chopper = registry->createEntity();
-	chopper.tag("player");
-	// add components to the entity
-	chopper.addComponent<TransformComponent>(glm::vec2(10.0f, 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
-	chopper.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
-	chopper.addComponent<SpriteComponent>("chopper-image", 32, 32, 1);
-	chopper.addComponent<AnimationComponent>(2, 12, true);
-	chopper.addComponent<BoxColliderComponent>(32, 32);
-	chopper.addComponent<ProjectileEmitterComponent>(glm::vec2(150.0f, 150.0f), 0, 10000, 10, true);
-	chopper.addComponent<KeyboardControlledComponent>(glm::vec2(0, -80), glm::vec2(80, 0), glm::vec2(0, 80), glm::vec2(-80, 0));
-	chopper.addComponent<CameraFollowComponent>();
-	chopper.addComponent<HealthComponent>(100);
-
-	Entity tank = registry->createEntity();
-	tank.group("enemies");
-	tank.addComponent<TransformComponent>(glm::vec2(500.0f, 200.0f), glm::vec2(1.0f, 1.0f), 0.0f);
-	tank.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
-	tank.addComponent<SpriteComponent>("tank-image", 32, 32, 1);
-	tank.addComponent<BoxColliderComponent>(32, 32);
-	tank.addComponent<ProjectileEmitterComponent>(glm::vec2(100.0f, 0.0f), 5000, 3000, 10, false);
-	tank.addComponent<HealthComponent>(100);
-
-	Entity truck = registry->createEntity();
-	truck.group("enemies");
-	truck.addComponent<TransformComponent>(glm::vec2(10.0f, 200.0f), glm::vec2(1.0f, 1.0f), 0.0f);
-	truck.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
-	truck.addComponent<SpriteComponent>("truck-image", 32, 32, 1);
-	truck.addComponent<BoxColliderComponent>(32, 32);
-	truck.addComponent<ProjectileEmitterComponent>(glm::vec2(0.0f, 100.0f), 2000, 5000, 10, false);
-	truck.addComponent<HealthComponent>(100);
-
-	Entity radar = registry->createEntity();
-	radar.addComponent<TransformComponent>(glm::vec2(static_cast<float>(windowWidth - 74), 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
-	radar.addComponent<RigidbodyComponent>(glm::vec2(0.0f, 0.0f));
-	radar.addComponent<SpriteComponent>("radar-image", 64, 64, 2, true);
-	radar.addComponent<AnimationComponent>(8, 5, true);
-
-	Entity label = registry->createEntity();
-	label.addComponent<TransformComponent>(glm::vec2(windowWidth/2 - 40, 10.0f), glm::vec2(1.0f, 1.0f), 0.0f);
-	SDL_Color white = { 255, 255, 255, 255 };
-	label.addComponent<TextLabelComponent>("CHOPPER 1.0", "charriot-font-30", white, true);
-}
-
-void Game::setup() {
-	loadLevel(1);
+	// load the first level
+	LevelLoader loader;
+	lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::os);
+	loader.loadLevel(lua, registry.get(), resources.get(), renderer, 2);
 }
 
 void Game::update(){
@@ -244,6 +149,7 @@ void Game::update(){
 	// reset al event handlers for the current frame
 	eventBus->reset();
 	// perform the subscription of events for all systems
+	registry->getSystem<MovementSystem>().listenToEvents(eventBus.get());
 	registry->getSystem<DamageSystem>().listenToEvents(eventBus.get());
 	registry->getSystem<KeyboardControlSystem>().listenToEvents(eventBus.get());
 	registry->getSystem<ProjectileEmitSystem>().listenToEvents(eventBus.get());
@@ -259,6 +165,7 @@ void Game::update(){
 	registry->getSystem<ProjectileLifecycleSystem>().update();
 	registry->getSystem<ProjectileEmitSystem>().update(registry.get());
 	registry->getSystem<CollisionSystem>().update(eventBus.get());
+	registry->getSystem<ScriptSystem>().update(deltaTime, SDL_GetTicks());
 }
 
 void Game::render() {

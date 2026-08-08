@@ -11,6 +11,8 @@
 #include <imgui/imgui_impl_sdl3.h>
 #include <imgui/imgui_impl_sdlrenderer3.h>
 
+// Add logger gui later
+
 class RenderGUISystem : public System {
 public:
     RenderGUISystem() = default;

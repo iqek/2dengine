@@ -4,6 +4,7 @@
 #include "../ecs/ECS.h"
 #include "../resources/ResourceManager.h"
 #include "../event_manager/EventBus.h"
+#include <sol/sol.hpp>
 
 constexpr int FPS = 60;
 constexpr int MILLISECS_PER_FRAME = 1000 / FPS;
@@ -17,6 +18,8 @@ private:
 	SDL_Renderer* renderer;
 	SDL_FRect camera;
 
+	sol::state lua;
+
 	std::unique_ptr<Registry> registry;
 	std::unique_ptr<ResourceManager> resources;
 	std::unique_ptr<EventBus> eventBus;
@@ -26,7 +29,6 @@ public:
 	~Game();
 	void initialize();
 	void run();
-	void loadLevel(int level);
 	void setup();
 	void processInput();
 	void update();

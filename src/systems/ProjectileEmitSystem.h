@@ -57,7 +57,7 @@ public:
                     projectile.group("projectiles");
                     projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0f, 1.0f), 0.0f);
                     projectile.addComponent<RigidbodyComponent>(projectileVelocity);
-                    projectile.addComponent<SpriteComponent>("bullet-image", 4, 4, 4);
+                    projectile.addComponent<SpriteComponent>("bullet-texture", 4, 4, 4);
                     projectile.addComponent<BoxColliderComponent>(4, 4);
                     projectile.addComponent<ProjectileComponent>(projectileEmitter.isFriendly, projectileEmitter.hitDamage, projectileEmitter.projectileDuration);
                 }
@@ -88,7 +88,7 @@ public:
                 projectile.group("projectiles");
                 projectile.addComponent<TransformComponent>(projectilePosition, glm::vec2(1.0f, 1.0f), 0.0f);
                 projectile.addComponent<RigidbodyComponent>(projectileEmitter.projectileVelocity);
-                projectile.addComponent<SpriteComponent>("bullet-image", 4, 4, 4);
+                projectile.addComponent<SpriteComponent>("bullet-texture", 4, 4, 4);
                 projectile.addComponent<BoxColliderComponent>(4, 4);
                 projectile.addComponent<ProjectileComponent>(projectileEmitter.isFriendly, projectileEmitter.hitDamage, projectileEmitter.projectileDuration);
 
